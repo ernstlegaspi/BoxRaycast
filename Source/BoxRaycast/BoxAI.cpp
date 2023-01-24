@@ -1,4 +1,5 @@
 #include "BoxAI.h"
+#include "DrawDebugHelpers.h"
 #include "Kismet/KismetMathLibrary.h"
 
 ABoxAI::ABoxAI() {
@@ -18,6 +19,7 @@ void ABoxAI::BeginPlay() {
 	YRand = YDir == 1.f ? 1.f : -1.f;
 	RestTime = -1.f;
 	AInvisibleActor = GetWorld()->SpawnActor<AActor>(ActorToSpawn, GetActorTransform());
+	BoxName = *GetFName().ToString();
 }
 
 void ABoxAI::Tick(float DeltaTime) {
@@ -38,6 +40,8 @@ void ABoxAI::Tick(float DeltaTime) {
 	else {
 		if(IsBothAxis == 0.f) {
 			if(YDir == 1.f) {
+				SetStartAndEnd(0, 0, 50, 200);
+
 				if(BoxMove.Y < NewPoint.Y + Dist) {
 					BoxMove.Y += Speed * DeltaTime;
 					ActorX = GetActorLocation().X;
@@ -46,6 +50,8 @@ void ABoxAI::Tick(float DeltaTime) {
 				else ResetVariables();
 			}
 			else {
+				SetStartAndEnd(0, 0, -50, -200);
+
 				if(BoxMove.Y > NewPoint.Y - Dist) {
 					BoxMove.Y -= Speed * DeltaTime;
 					ActorX = GetActorLocation().X;
@@ -56,6 +62,8 @@ void ABoxAI::Tick(float DeltaTime) {
 		}
 		else if(IsBothAxis == 1.f) {
 			if(XDir == 1.f) {
+				SetStartAndEnd(50, 200, 0, 0);
+
 				if(BoxMove.X < NewPoint.X + Dist) {
 					BoxMove.X += Speed * DeltaTime;
 					ActorY = GetActorLocation().Y;
@@ -64,6 +72,8 @@ void ABoxAI::Tick(float DeltaTime) {
 				else ResetVariables();
 			}
 			else {
+				SetStartAndEnd(-50, -200, 0, 0);
+
 				if(BoxMove.X > NewPoint.X - Dist) {
 					BoxMove.X -= Speed * DeltaTime;
 					ActorY = GetActorLocation().Y;
@@ -74,6 +84,8 @@ void ABoxAI::Tick(float DeltaTime) {
 		}
 		else {
 			if(XDir == 1.f) {
+				SetStartAndEnd(50, 200, YRand == 1 ? 50 : -50, YRand == 1 ? 200 : -200);
+
 				if(BoxMove.X < NewPoint.X + Dist) {
 					BoxMove.X += Speed * DeltaTime;
 					BoxMove.Y = BoxMove.Y + (Speed * YRand) * DeltaTime;
@@ -82,6 +94,8 @@ void ABoxAI::Tick(float DeltaTime) {
 				else ResetVariables();
 			}
 			else {
+				SetStartAndEnd(-50, -200, YRand == 1 ? 50 : -50, YRand == 1 ? 200 : -200);
+
 				if(BoxMove.X > NewPoint.X - Dist) {
 					BoxMove.X -= Speed * DeltaTime;
 					BoxMove.Y = BoxMove.Y + (Speed * YRand) * DeltaTime;
@@ -91,6 +105,8 @@ void ABoxAI::Tick(float DeltaTime) {
 			}
 		}
 	}
+	
+	DetectHit(XStart, XEnd, YStart, YEnd);
 }
 
 void ABoxAI::FaceInvisbleActor(int x, int y) {
@@ -103,4 +119,24 @@ void ABoxAI::FaceInvisbleActor(int x, int y) {
 void ABoxAI::ResetVariables() {
 	RestTime = .5f;
 	CanReassign = true;
+}
+
+void ABoxAI::SetStartAndEnd(int _StartX, int _EndX, int _StartY, int _EndY) {
+	XStart = _StartX;
+	XEnd = _EndX;
+	YStart = _StartY;
+	YEnd = _EndY;
+}
+
+void ABoxAI::DetectHit(int StartX, int EndX, int StartY, int EndY) {
+	if(GetWorld()) {
+		Start = GetActorLocation() + FVector(StartX, StartY, 0);
+		End = Start + FVector(EndX, EndY, 0);
+		ActorHit = GetWorld()->LineTraceSingleByChannel(Hit, Start, End, ECC_Pawn, FCollisionQueryParams(), FCollisionResponseParams());
+		
+		if(ActorHit && Hit.GetActor() && (BoxName != Hit.GetActor()->GetFName().ToString())) {
+			Destroy();
+			Hit.GetActor()->Destroy();
+		}
+	}
 }
