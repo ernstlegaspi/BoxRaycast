@@ -1,6 +1,7 @@
 #include "BoxAI.h"
 #include "DrawDebugHelpers.h"
 #include "Kismet/KismetMathLibrary.h"
+#include "NiagaraFunctionLibrary.h"
 
 ABoxAI::ABoxAI() {
 	PrimaryActorTick.bCanEverTick = true;
@@ -20,6 +21,7 @@ void ABoxAI::BeginPlay() {
 	RestTime = -1.f;
 	AInvisibleActor = GetWorld()->SpawnActor<AActor>(ActorToSpawn, GetActorTransform());
 	BoxName = *GetFName().ToString();
+	RayEnd = 300;
 }
 
 void ABoxAI::Tick(float DeltaTime) {
@@ -40,7 +42,7 @@ void ABoxAI::Tick(float DeltaTime) {
 	else {
 		if(IsBothAxis == 0.f) {
 			if(YDir == 1.f) {
-				SetStartAndEnd(0, 0, 50, 200);
+				SetStartAndEnd(0, 0, 50, RayEnd);
 
 				if(BoxMove.Y < NewPoint.Y + Dist) {
 					BoxMove.Y += Speed * DeltaTime;
@@ -50,7 +52,7 @@ void ABoxAI::Tick(float DeltaTime) {
 				else ResetVariables();
 			}
 			else {
-				SetStartAndEnd(0, 0, -50, -200);
+				SetStartAndEnd(0, 0, -50, -RayEnd);
 
 				if(BoxMove.Y > NewPoint.Y - Dist) {
 					BoxMove.Y -= Speed * DeltaTime;
@@ -62,7 +64,7 @@ void ABoxAI::Tick(float DeltaTime) {
 		}
 		else if(IsBothAxis == 1.f) {
 			if(XDir == 1.f) {
-				SetStartAndEnd(50, 200, 0, 0);
+				SetStartAndEnd(50, RayEnd, 0, 0);
 
 				if(BoxMove.X < NewPoint.X + Dist) {
 					BoxMove.X += Speed * DeltaTime;
@@ -72,7 +74,7 @@ void ABoxAI::Tick(float DeltaTime) {
 				else ResetVariables();
 			}
 			else {
-				SetStartAndEnd(-50, -200, 0, 0);
+				SetStartAndEnd(-50, -RayEnd, 0, 0);
 
 				if(BoxMove.X > NewPoint.X - Dist) {
 					BoxMove.X -= Speed * DeltaTime;
@@ -84,7 +86,7 @@ void ABoxAI::Tick(float DeltaTime) {
 		}
 		else {
 			if(XDir == 1.f) {
-				SetStartAndEnd(50, 200, YRand == 1 ? 50 : -50, YRand == 1 ? 200 : -200);
+				SetStartAndEnd(50, RayEnd, YRand == 1 ? 50 : -50, YRand == 1 ? 200 : -RayEnd);
 
 				if(BoxMove.X < NewPoint.X + Dist) {
 					BoxMove.X += Speed * DeltaTime;
@@ -94,7 +96,7 @@ void ABoxAI::Tick(float DeltaTime) {
 				else ResetVariables();
 			}
 			else {
-				SetStartAndEnd(-50, -200, YRand == 1 ? 50 : -50, YRand == 1 ? 200 : -200);
+				SetStartAndEnd(-50, -RayEnd, YRand == 1 ? 50 : -50, YRand == 1 ? RayEnd : -RayEnd);
 
 				if(BoxMove.X > NewPoint.X - Dist) {
 					BoxMove.X -= Speed * DeltaTime;
@@ -134,9 +136,10 @@ void ABoxAI::DetectHit(int StartX, int EndX, int StartY, int EndY) {
 		End = Start + FVector(EndX, EndY, 0);
 		ActorHit = GetWorld()->LineTraceSingleByChannel(Hit, Start, End, ECC_Pawn, FCollisionQueryParams(), FCollisionResponseParams());
 		
-		if(ActorHit && Hit.GetActor() && (BoxName != Hit.GetActor()->GetFName().ToString())) {
+		if(ActorHit && Hit.GetActor() && (BoxName != Hit.GetActor()->GetFName().ToString()) && !Hit.GetActor()->GetFName().ToString().Contains("Floor")) {
 			Destroy();
 			Hit.GetActor()->Destroy();
+			UNiagaraFunctionLibrary::SpawnSystemAtLocation(GetWorld(), NS_Explosion, GetActorLocation());
 		}
 	}
 }

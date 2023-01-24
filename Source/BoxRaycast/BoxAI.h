@@ -15,6 +15,9 @@ public:
 	TSubclassOf<AActor> ActorToSpawn;
 
 protected:
+	UPROPERTY(EditAnywhere, Category = "ABoxAI")
+	class UNiagaraSystem* NS_Explosion;
+
 	AActor* AInvisibleActor;
 	FHitResult Hit;
 	FRotator InvisibleActorRotation;
@@ -22,7 +25,7 @@ protected:
 	FVector BoxMove, NewPoint, Start, End, Forward, Right;
 	bool CanReassign, ActorHit;
 	float Speed, RestTime, XDir, YDir, YRand, IsBothAxis, ActorX, ActorY, XStart, XEnd, YStart, YEnd;
-	short int Dist;
+	short int Dist, RayEnd;
 
 	void ResetVariables();
 	void FaceInvisbleActor(int x, int y);
